@@ -5,27 +5,39 @@ import { MediasoupService } from 'src/mediasoup/mediasoup.service';
 export class ConsumerService {
   constructor(private readonly mediasoupService: MediasoupService) {}
 
-  async consume(roomId: string, transportId: string, producerId: string, rtpCapabilities: any) {
-    const router = this.mediasoupService.getRouter(roomId);
-    if (!router) throw new Error(`Router not found for room: ${roomId}`);
-
+  async connectTransport(
+    roomId: string,
+    transportId: string,
+    dtlsParameters: any,
+  ) {
     const transport = this.mediasoupService.getTransport(roomId, transportId);
     if (!transport) throw new Error(`Transport not found: ${transportId}`);
 
-    // Use type assertion for canConsume check
-    const canConsume = (router as any).canConsume({
-      producerId,
-      rtpCapabilities
-    });
+    await transport.connect({ dtlsParameters });
+    return { connected: true };
+  }
 
-    if (!canConsume) {
+  async consume(
+    roomId: string,
+    transportId: string,
+    producerId: string,
+    rtpCapabilities: any,
+  ) {
+    const transport = this.mediasoupService.getTransport(roomId, transportId);
+    if (!transport) throw new Error(`Transport not found: ${transportId}`);
+
+    const router = this.mediasoupService.getRouter(roomId);
+    if (!router) throw new Error(`Router not found for room: ${roomId}`);
+
+    // Check if the router can consume the specified producer
+    if (!router.canConsume({ producerId, rtpCapabilities })) {
       throw new Error('Cannot consume this producer');
     }
 
     const consumer = await transport.consume({
       producerId,
       rtpCapabilities,
-      paused: false,
+      paused: true,
     });
 
     return {

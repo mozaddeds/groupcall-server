@@ -5,6 +5,17 @@ import { ConsumerService } from './consumer.service';
 export class ConsumerController {
   constructor(private readonly consumerService: ConsumerService) {}
 
+  @Post('connect')
+  async connectTransport(
+    @Body() body: { roomId: string; transportId: string; dtlsParameters: any },
+  ) {
+    return this.consumerService.connectTransport(
+      body.roomId,
+      body.transportId,
+      body.dtlsParameters,
+    );
+  }
+
   @Post()
   async consume(
     @Body()
